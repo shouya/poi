@@ -30,3 +30,29 @@ curl xxxx/ubuntu-setup.sh | sh -
 ```
 
 If you already have curl installed.
+
+## Roadmap
+
+* Set up script
+  - setup hostname/user/login/security fix/software
+  - git clone git@github.com:xxx/poi.git
+  - poi --init .
+  - poi --test
+
+* Supervisord
+  - start poi monitor daemon
+  - start other generated confs
+
+* Poi
+  - init working directory
+  - test if the env works and send an email report
+  - github web hook for monitoring
+
+* Poi monitoring
+  - git fetch (LOG)
+  - git reset --hard origin/master (LOG)
+  - compute updated/new services (LOG)
+  - rebuild updated services (LOG)
+  - regenerate supervisord confs (LOG)
+  - pkill -HUP supervisord
+  - collect LOGs and send to the dearest user via email
