@@ -1,4 +1,5 @@
 require 'webrick'
+require 'json'
 
 class Webhook
   attr :rebuild_service
@@ -17,15 +18,14 @@ class Webhook
   def setup_server
     @server.mount_proc '/event_handler' do |req, res|
       q = req.query
-      payload = q['payload']
+      payload = JSON.parse(q['payload'])
+      p req['x-github-event']
       case req['x-github-event']
-      when "push"
-        p payload
-      else
-        p req
-        p payload
+      when 'push'
+        res.body = ''
+      when 'ping'
+        res.body = ''
       end
-      res.body = "yoo"
     end
   end
 end
