@@ -12,7 +12,7 @@ import Control.Concurrent (forkIO)
 
 import Deploy
 
-startWebhook :: DeployLock -> Deploy -> IO ()
+startWebhook :: DeployLock -> DeployProc -> IO ()
 startWebhook lock deploy = withSocketsDo $ do
   sock <- listenOn $ PortNumber 8000
   loop sock

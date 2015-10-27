@@ -4,7 +4,7 @@
 
 module Deploy
        ( deploy
-       , DeployStatus (..)
+       , DeployStatus(..)
        , DeployLock
        , DeployProc
        ) where
@@ -27,11 +27,11 @@ data DeployStatus = DeployIdle
 
 deploy :: DeployProc
 deploy = deployLock dep
-  where dep = shelly $ sub $ do
+  where dep = shelly $ sub $ errExit True $ do
+          sub $ updateCode
+          sub $ buildServices
+          sub $ reloadServices
 
-          updateCode
-          buildServices
-          reloadServices
 
 deployLock :: IO () -> DeployProc
 deployLock deploy lock = do
@@ -88,8 +88,18 @@ buildServices :: Sh ()
 buildServices = do
   compose ["build"]
 
-mailOutput :: Bool -> Text -> Sh ()
-mailOutput isSuccessful log = do
+sendMailMailgun :: Text -> Text -> Text -> Sh ()
+sendMailMailgun subject body recipient = do
+  let api = ""
+      url = ""
+      from = ""
+      to = ""
   curl ["-s", "--user", api, url,
         "-F", "from=" <> from,
-        "-F", "to=" <> to]
+        "-F", "to=" <> to,
+        "-F", "subject=" <> subject,
+        "-F", "text=" <> body]
+
+mailOutput :: Bool -> Text -> Sh ()
+mailOutput isSuccessful log = do
+  return ()
