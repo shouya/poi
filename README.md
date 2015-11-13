@@ -2,9 +2,16 @@
 
 **(IN DEV)** Personal VPS automatic deployment system desu poi.
 
+## What you need to have
+
+* A fresh new Linux VPS (Ubuntu 14.04 LTS recommended)
+* A public IP with A/CNAME record points to that VPS
+* Full access to a github repository
+
+
 ## Aim
 
-* [ ] Lightweight daemon
+* [x] Lightweight daemon
 * [ ] Service monitoring and auto restarting (with supervisord)
 * [ ] Instant service deployment (with Github hook)
 * [ ] Email feedback with full log (with Mailgun, optional)

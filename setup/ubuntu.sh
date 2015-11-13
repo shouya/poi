@@ -63,19 +63,7 @@ service ssh restart
 
 echo Installing packages
 apt-get update
-apt-get install -y curl docker git supervisor
-
+apt-get install -y curl docker git
 
 echo Pulling git repository
 cd $home && sudo -u "$user" git clone "$repo" poi && cd poi
-
-
-echo Setting up supervisord
-cp -f conf/supervisord.conf /etc/supervisor/supervisord.conf
-echo "files = $(pwd)/gen/*.conf" \
-     >> /etc/supervisor/supervisord.conf
-
-
-echo Setting up poi
-./poi --init .
-./poi --test
