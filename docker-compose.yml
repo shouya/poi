@@ -1,0 +1,5 @@
+shadowsocks:
+  build: shadowsocks
+  privileged: true
+  ports:
+    - '2000:1'
