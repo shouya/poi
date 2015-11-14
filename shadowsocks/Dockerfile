@@ -15,7 +15,7 @@ RUN ./configure
 RUN make
 RUN make install
 
-ADD shadowsocks.sh   /
+ADD shadowsocks.sh  /
 
 EXPOSE 1
 
