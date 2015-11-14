@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # build poi binary using docker
 #
@@ -10,9 +11,9 @@ cd $SCRIPTDIR
 
 eval "$(docker-machine env "$DOCKER_MACHINE")"
 
-stack build -v
+stack build -v < <(echo)
 
 find .stack-work/dist/x86_64-linux \
-     -perm +x \
-     -name 'poi-exe' \
+     -type f \
+     -name poi-exe \
      -exec cp {} bin/poi \;
