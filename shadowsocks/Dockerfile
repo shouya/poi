@@ -16,6 +16,7 @@ RUN make
 RUN make install
 
 ADD shadowsocks.sh  /
+RUN chmod +x /shadowsocks.sh
 
 EXPOSE 1
 
