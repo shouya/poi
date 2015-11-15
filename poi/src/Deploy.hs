@@ -28,6 +28,7 @@ data DeployStatus = DeployIdle
 deploy :: DeployProc
 deploy = deployLock dep
   where dep = shelly $ sub $ errExit True $ do
+          cd "vps"
           sub $ updateCode
           sub $ buildServices
           sub $ reloadServices
