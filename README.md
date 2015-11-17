@@ -6,14 +6,14 @@
 
 * A fresh new Linux VPS (Ubuntu 14.04 LTS recommended)
 * A public IP with A/CNAME record points to that VPS
-* Full access to a github repository
+* Full access to a github repository (with all your services configured in docker)
 
 
 ## Aim
 
 * [x] Lightweight daemon
 * [ ] Service monitoring and auto restarting (with supervisord)
-* [ ] Instant service deployment (with Github hook)
+* [x] Instant service deployment (with Github hook)
 * [ ] Email feedback with full log (with Mailgun, optional)
 * [ ] Plugin support
 * [ ] Fully dockerized apps for portability
@@ -38,28 +38,27 @@ curl xxxx/ubuntu-setup.sh | sh -
 
 If you already have curl installed.
 
-## Roadmap
+## Directory Structure
 
-* Set up script
-  - setup hostname/user/login/security fix/software
-  - git clone git@github.com:xxx/poi.git
-  - poi --init .
-  - poi --test
+The setup script will generate the following directory structure:
 
-* Supervisord
-  - start poi monitor daemon
-  - start other generated confs
+```
+/poi/
+ +- poi
+ +- vps/
+    +- .git/*
+    +- poi.conf
+    +- docker-compose.yml
+    +- services
+    +- <your-service>/
+       +- Dockerfile
+       +- <other files>
+```
 
-* Poi
-  - init working directory
-  - test if the env works and send an email report
-  - github web hook for monitoring
+## What the setup script does
 
-* Poi monitoring
-  - git fetch (LOG)
-  - git reset --hard origin/master (LOG)
-  - compute updated/new services (LOG)
-  - rebuild updated services (LOG)
-  - regenerate supervisord confs (LOG)
-  - pkill -HUP supervisord
-  - collect LOGs and send to the dearest user via email
+* Download `poi` binary
+* `git clone` your repo for VPS
+* Build for the first time
+* Start the services
+* Start `poi`
