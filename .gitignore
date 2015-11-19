@@ -2,3 +2,4 @@
 .stack/*
 !.stack/.gitkeep
 .docker_built
+bin/poi
