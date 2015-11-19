@@ -15,7 +15,7 @@ $(EXE_TARGET): .docker_built $(wildcard src/*) *.cabal stack.yaml
 	           -v `pwd`/.stack:/root/.stack \
 	           -w /tmp \
 	           $(IMAGE) \
-	           stack build
+	           /bin/bash -c "stack build"
 	find .stack-work/dist/x86_64-linux \
 	           -name "$(EXE)" -type f \
 	           -exec cp -f {} $(EXE_TARGET) \;

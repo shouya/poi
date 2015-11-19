@@ -1,5 +1,5 @@
 from mitchty/alpine-ghc:latest
 
-COPY stack.yaml poi.cabal /tmp/
+RUN apk --update add build-base
 
-RUN stack setup
+COPY stack.yaml poi.cabal /tmp/
