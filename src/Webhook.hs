@@ -11,12 +11,12 @@ import Network.Socket.ByteString (sendAll)
 import Control.Concurrent (forkIO)
 
 import Deploy
-
-port = 8000
+import Config
 
 startWebhook :: DeployLock -> DeployProc -> IO ()
 startWebhook lock deploy = withSocketsDo $ do
-  sock <- listenOn $ PortNumber port
+  port <- (read <$> readConf "main" "listen_port" :: IO Int)
+  sock <- listenOn $ PortNumber (toEnum port)
   loop sock
   where loop sock = do
           (conn, _) <- accept sock
