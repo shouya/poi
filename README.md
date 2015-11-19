@@ -4,39 +4,80 @@
 
 ## What you need to have
 
-* A fresh new Linux VPS (Ubuntu 14.04 LTS recommended)
-* A public IP with A/CNAME record points to that VPS
-* Full access to a github repository (with all your services configured in docker)
+* A public IP
+* A Linux VPS with git, docker, docker-compose installed
+* A github repository with your service bundle
+* A [mailgun](http://www.mailgun.com) account with API (optional)
 
+## Functionalities
 
-## Aim
+* [ ] Standalone binary
+* [ ] Auto restart (with systemd)
+* [ ] Update itself daily (with systemd)
+* [ ] Servicebundle setup from git repo
+* [ ] Generate initial service bundle
+* [x] Auto re-deploy with push webhook
+* [x] Full logs and failure handling
+* [ ] Email feedback for build result (with logs)
+* [ ] __Service monitoring and auto restarting__ (not decided)
 
-* [x] Lightweight daemon
-* [ ] Service monitoring and auto restarting (with supervisord)
-* [x] Instant service deployment (with Github hook)
-* [ ] Email feedback with full log (with Mailgun, optional)
-* [ ] Plugin support
-* [ ] Fully dockerized apps for portability
-* [ ] Re-deploy all services on a second server within 10 mins
+## Usage
 
-## Prepare the environment
+### On your host
 
-Get a brand new VPS with Ubuntu 14.04 LTS installed.
-
-Run the follow command and follow the instruction prompted to set up the basic environment:
-
-```
-wget xxxx/ubuntu-setup.sh
-sudo sh ubuntu-setup.sh
-```
-
-Or,
+Initialize service bundle:
 
 ```
-curl xxxx/ubuntu-setup.sh | sh -
+$ mkdir service-bundle && cd service-bundle
+$ poi init
 ```
 
-If you already have curl installed.
+Push your service bundle:
+
+```
+$ git remote add origin <your-git-repo>
+$ git push
+```
+
+### On your VPS
+
+Install all required software, and make those binaries accessible in
+`PATH`: `git`, `docker`, `docker-compose`.
+
+If you are on an Ubuntu VPS, you can use the automatic setup script:
+
+```
+$ bash <(wget -O - <TODO>)
+```
+
+Download the `poi` binary:
+
+```
+$ wget -O poi <TODO>/poi
+$ chmod +x poi
+```
+
+Use poi to setup the service bundle,
+
+```
+$ ./poi setup https://github.com/<xxx>/<your-service-bundle>
+$ ./poi test
+$ ./poi build
+```
+
+Start poi daemon,
+
+```
+$ ./poi daemon
+```
+
+Or if you want poi daemon to be automatically started, (with systemd)
+
+```
+$ ./poi systemd | sudo tee /etc/systemd/system/poi_daemon.service
+$ systemctl start poi_daemon
+$ systemctl enable poi_daemon
+```
 
 ## Directory Structure
 
@@ -45,7 +86,7 @@ The setup script will generate the following directory structure:
 ```
 /poi/
  +- poi
- +- vps/
+ +- service-bundle/
     +- .git/*
     +- poi.conf
     +- docker-compose.yml
@@ -54,11 +95,3 @@ The setup script will generate the following directory structure:
        +- Dockerfile
        +- <other files>
 ```
-
-## What the setup script does
-
-* Download `poi` binary
-* `git clone` your repo for VPS
-* Build for the first time
-* Start the services
-* Start `poi`
