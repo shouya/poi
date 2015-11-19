@@ -10,6 +10,7 @@ import Data.Functor ((<$>))
 import qualified Data.Text as T
 import Data.Text (Text)
 import Text.Printf
+import System.Directory
 
 configPath = "vps/poi.conf"
 
@@ -19,12 +20,17 @@ forceEither (Right a) = a
 
 poiConf :: IO ConfigParser
 poiConf = do
-  result <- readfile defaultConfig configPath
-  case result of
-    Left  _ -> do
-      print "Read config error, using default config"
-      return defaultConfig
-    Right a -> return a
+  doesExist <- doesFileExist configPath
+  if doesExist
+    then loadconfig
+    else return defaultConfig
+  where loadconfig = do
+          result <- readfile defaultConfig configPath
+          case result of
+            Left  _ -> do
+              print "Read config error, using default config"
+              return defaultConfig
+            Right a -> return a
 
 
 defaultConfig :: ConfigParser

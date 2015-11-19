@@ -25,6 +25,7 @@ library
                      , text
                      , shelly
                      , ConfigFile
+                     , directory
   default-language:    Haskell2010
 
 executable poi-exe
