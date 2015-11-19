@@ -16,6 +16,7 @@ import Shelly
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Monoid ((<>))
+import Control.Exception
 default (T.Text)
 
 type DeployLock = IORef DeployStatus
@@ -26,16 +27,34 @@ data DeployStatus = DeployIdle
                   | DeployWaiting
 
 deploy :: DeployProc
-deploy = deployLock dep
-  where dep = shelly $ sub $ errExit True $ do
-          cd "vps"
-          echo "--- Updating Code ---"
-          sub $ updateCode
-          echo "--- Building Services ---"
-          sub $ buildServices
-          echo "--- Restarting Services ---"
-          sub $ reloadServices
-          echo "--- Deploy Finished ---"
+deploy lock = catch (deployLock dep lock) handleException
+  where dep = shelly $ deployShell
+        handleException ex = shelly $
+          exceptionShell lock ex
+
+
+exceptionShell :: DeployLock -> SomeException -> Sh ()
+exceptionShell lock ex = do
+  echo "--- Exception Caught ---"
+  echo $ T.pack $ show ex
+  liftIO $ releaseLock lock
+  echo "--- Deployment Aborted ---"
+
+
+deployShell :: Sh ()
+deployShell = sub $ errExit True $ do
+  cd "vps"
+  echo "--- Updating Code ---"
+  sub $ updateCode
+  echo "--- Building Services ---"
+  sub $ buildServices
+  echo "--- Restarting Services ---"
+  sub $ reloadServices
+  echo "--- Deploy Finished ---"
+
+
+releaseLock :: DeployLock -> IO ()
+releaseLock lock = writeIORef lock DeployIdle
 
 deployLock :: IO () -> DeployProc
 deployLock deploy lock = do
@@ -44,7 +63,7 @@ deployLock deploy lock = do
    DeployIdle    -> do
      writeIORef lock Deploying
      deploy
-     writeIORef lock DeployIdle
+     releaseLock lock
    DeployWaiting -> return ()
    Deploying     -> do
      writeIORef lock DeployWaiting
