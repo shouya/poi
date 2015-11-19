@@ -1,1 +1,3 @@
 .stack-work/
+.stack/*
+!.stack/.gitkeep

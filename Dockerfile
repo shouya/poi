@@ -1,5 +1,5 @@
 from mitchty/alpine-ghc:latest
 
-COPY . /tmp/
-# RUN stack setup
-RUN stack build
+COPY stack.yaml poi.cabal /tmp/
+
+RUN stack setup

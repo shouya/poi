@@ -65,12 +65,13 @@ curl = command_ "curl" []
 type ServiceName = Text
 
 serviceList :: Sh [ServiceName]
-serviceList = liftIO $ map T.pack <$> filter nocomment <$> lines <$> content
-  where config_file = "./services"
-        content = readFile config_file
-        nocomment ('#':_) = False
-        nocomment []      = False
-        nocomment _       = True
+serviceList = filter nocomment <$> svrLines
+  where config_file = "services"
+        svrLines = T.lines <$> readfile config_file
+        nocomment txt
+          | "#" `T.isPrefixOf` txt = False
+          | T.null txt             = False
+          | otherwise              = True
 
 reloadServices :: Sh ()
 reloadServices = do
