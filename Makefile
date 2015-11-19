@@ -1,14 +1,16 @@
 IMAGE:=poi-linux-x64
 EXE:=poi-exe
 EXE_TARGET:=bin/poi
-.PHONY: docker
 
-all: $(EXE)
+all: $(EXE_TARGET)
 
-docker: Dockerfile
+.PHONY: clean
+
+.docker_built: Dockerfile
 	docker build -t $(IMAGE) .
+	touch .docker_built
 
-$(EXE): docker
+$(EXE_TARGET): .docker_built $(wildcard src/*) *.cabal stack.yaml
 	docker run -v `pwd`:/tmp \
 	           -v `pwd`/.stack:/root/.stack \
 	           -w /tmp \
