@@ -29,10 +29,13 @@ deploy :: DeployProc
 deploy = deployLock dep
   where dep = shelly $ sub $ errExit True $ do
           cd "vps"
+          echo "--- Updating Code ---"
           sub $ updateCode
+          echo "--- Building Services ---"
           sub $ buildServices
+          echo "--- Restarting Services ---"
           sub $ reloadServices
-
+          echo "--- Deploy Finished ---"
 
 deployLock :: IO () -> DeployProc
 deployLock deploy lock = do
