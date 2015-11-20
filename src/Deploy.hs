@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
+
 
 module Deploy
        ( deploy
@@ -17,12 +19,19 @@ module Deploy
 import Data.IORef
 import Control.Concurrent (threadDelay)
 
-import Shelly
+import Shelly hiding (echo)
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Monoid ((<>))
 import Control.Exception
-default (T.Text)
+
+import Text.Printf
+import Data.Either
+
+import TextCollector
+import Config
+
+default (Text)
 
 type DeployLock = IORef DeployStatus
 type DeployProc = DeployLock -> IO ()
@@ -35,10 +44,11 @@ dir = "vps"
 serviceListFile = "services"
 
 deploy :: DeployProc
-deploy lock = catch (deployLock dep lock) handleException
-  where dep = shelly deployShell
-        handleException ex = shelly $
-          exceptionShell lock ex
+deploy lock = deployLock dep lock >> releaseLock lock
+  where dep = shelly $ collectAndSendOutput deployShell
+
+echo :: Text -> Sh ()
+echo x = command "echo" [] [x] >> return ()
 
 withinServiceBundle :: Sh a -> Sh a
 withinServiceBundle sh = sub (cd dir >> sh)
@@ -50,8 +60,33 @@ stepReported name sh = sub $ do
   echo $ "--- Finish " <> name <> " ---"
   return a
 
-outputCollectedAndSent :: Sh a -> Sh a
-outputCollectedAndSent = id -- TODO
+collectAndSendOutput :: Sh a -> Sh ()
+collectAndSendOutput sh = liftIO $ do
+  iotc <- newTextCollector
+  let appText'   = appendText iotc
+      appText sh = log_stderr_with appText' $
+                   log_stdout_with appText' sh
+
+  result <- try (shelly $ appText sh)
+  handle result appText
+
+  text <- extractTextCollector iotc
+  final result text
+
+  return ()
+  where
+    logException ex appText = shelly $ appText $ do
+      echo "--- Exception Caught ---"
+      echo $ T.pack $ show ex
+      echo "--- Deployment Aborted ---"
+    handle (Left (ex :: SomeException)) appText = logException ex appText
+    handle (Right _) _       = return ()
+    final result text = do
+      let succ = either (const False) (const True) result
+      -- sendEmailResult succ text
+      printf "Build result: %s\n" (show succ)
+      putStrLn "Output:"
+      putStrLn (T.unpack text)
 
 onlyDo :: Text -> Sh a -> IO ()
 onlyDo name sh = onlyDoWithoutCd name sh'
@@ -59,7 +94,7 @@ onlyDo name sh = onlyDoWithoutCd name sh'
 
 onlyDoWithoutCd :: Text -> Sh a -> IO ()
 onlyDoWithoutCd name sh = shelly $
-                          outputCollectedAndSent $
+                          collectAndSendOutput $
                           errExit True $
                           stepReported name $
                           sh >> return ()
@@ -119,7 +154,6 @@ deployLock deploy lock = do
    DeployIdle    -> do
      writeIORef lock Deploying
      deploy
-     releaseLock lock
    DeployWaiting -> return ()
    Deploying     -> do
      writeIORef lock DeployWaiting
@@ -132,13 +166,13 @@ deployLock deploy lock = do
 
 
 compose :: [Text] -> Sh ()
-compose = command_ "docker-compose" []
+compose x = command "docker-compose" [] x >> return ()
 
 git :: Text -> [Text] -> Sh ()
-git = command1_ "git" []
+git x y = command1 "git" [] x y >> return ()
 
 curl :: [Text] -> Sh ()
-curl = command_ "curl" []
+curl x = command "curl" x [] >> return ()
 
 type ServiceName = Text
 
