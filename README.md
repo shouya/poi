@@ -11,10 +11,10 @@
 
 ## Functionalities
 
-* [ ] Standalone binary
+* [x] Standalone binary
 * [ ] Auto restart (with systemd)
 * [ ] Update itself daily (with systemd)
-* [ ] Servicebundle setup from git repo
+* [x] Service Bundle setup from git repo
 * [ ] Generate initial service bundle
 * [x] Auto re-deploy with push webhook
 * [x] Full logs and failure handling
