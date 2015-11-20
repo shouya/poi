@@ -11,8 +11,11 @@ runPoi :: IO ()
 runPoi = do
   cmd <- parseOptions
   case cmd of
-    OptDaemon -> runWebhook
-    OptEcho x -> putStrLn x
+    CmdDaemon  -> runWebhook
+    CmdEcho x  -> putStrLn x
+    CmdBuild   -> onlyBuildServices
+    CmdUp      -> onlyReloadServices
+    CmdSetup x -> setupServices x
 
 
 runWebhook :: IO ()

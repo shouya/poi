@@ -7,6 +7,10 @@ module Deploy
        , DeployStatus(..)
        , DeployLock
        , DeployProc
+       , onlyUpdateCode
+       , onlyBuildServices
+       , onlyReloadServices
+       , setupServices
        ) where
 
 import Data.IORef
@@ -26,11 +30,56 @@ data DeployStatus = DeployIdle
                   | Deploying
                   | DeployWaiting
 
+dir = "vps"
+
 deploy :: DeployProc
 deploy lock = catch (deployLock dep lock) handleException
-  where dep = shelly $ deployShell
+  where dep = shelly deployShell
         handleException ex = shelly $
           exceptionShell lock ex
+
+withinServiceBundle :: Sh a -> Sh a
+withinServiceBundle sh = sub (cd dir >> sh)
+
+stepReported :: Text -> Sh a -> Sh a
+stepReported name sh = sub $ do
+  echo $ "--- "        <> name <> " ---"
+  a <- sh
+  echo $ "--- Finish " <> name <> " ---"
+  return a
+
+outputCollectedAndSent :: Sh a -> Sh a
+outputCollectedAndSent = id -- TODO
+
+onlyDo :: Text -> Sh a -> IO ()
+onlyDo name sh = shelly $
+                 outputCollectedAndSent $
+                 errExit True $
+                 withinServiceBundle $
+                 stepReported name $
+                 sh >> return ()
+
+onlyUpdateCode :: IO ()
+onlyUpdateCode = onlyDo "Updating Code" updateCode
+
+onlyBuildServices :: IO ()
+onlyBuildServices = onlyDo "Building Services" buildServices
+
+onlyReloadServices :: IO ()
+onlyReloadServices = onlyDo "Reloading Services" reloadServices
+
+onlyCloneServiceBundle :: String -> IO ()
+onlyCloneServiceBundle url = shelly $
+                             outputCollectedAndSent $
+                             errExit True $
+                             stepReported "Cloning Repo" $
+                             cloneServiceBundle (T.pack url)
+
+setupServices :: String -> IO ()
+setupServices url = shelly logged
+  where logged = stepReported "Setting Up Service Bundle" setup
+        setup = errExit True $ do liftIO (onlyCloneServiceBundle url)
+                                  liftIO onlyBuildServices
 
 
 exceptionShell :: DeployLock -> SomeException -> Sh ()
@@ -43,13 +92,13 @@ exceptionShell lock ex = do
 
 deployShell :: Sh ()
 deployShell = sub $ errExit True $ do
-  cd "vps"
+  cd dir
   echo "--- Updating Code ---"
-  sub $ updateCode
+  sub updateCode
   echo "--- Building Services ---"
-  sub $ buildServices
+  sub buildServices
   echo "--- Restarting Services ---"
-  sub $ reloadServices
+  sub reloadServices
   echo "--- Deploy Finished ---"
 
 
@@ -85,6 +134,10 @@ curl :: [Text] -> Sh ()
 curl = command_ "curl" []
 
 type ServiceName = Text
+
+cloneServiceBundle :: Text -> Sh ()
+cloneServiceBundle url = do
+  git "clone" [url, toTextIgnore dir]
 
 serviceList :: Sh [ServiceName]
 serviceList = filter nocomment <$> svrLines
