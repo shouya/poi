@@ -18,7 +18,7 @@
 * [x] Generate initial service bundle
 * [x] Auto re-deploy with push webhook
 * [x] Full logs and failure handling
-* [ ] Email feedback for build result (with logs)
+* [x] Email feedback for build result (with logs)
 * [ ] __Service monitoring and auto restarting__ (not decided)
 
 ## Usage
@@ -47,7 +47,7 @@ Install all required software, and make those binaries accessible in
 If you are on an Ubuntu VPS, you can use the automatic setup script:
 
 ```
-$ bash <(wget -O - <TODO>)
+$ bash <(wget -O - TODO)
 ```
 
 Download the `poi` binary:
