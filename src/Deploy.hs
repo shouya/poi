@@ -11,6 +11,7 @@ module Deploy
        , onlyBuildServices
        , onlyReloadServices
        , setupServices
+       , onlyGenerateServiceBundle
        ) where
 
 import Data.IORef
@@ -31,6 +32,7 @@ data DeployStatus = DeployIdle
                   | DeployWaiting
 
 dir = "vps"
+serviceListFile = "services"
 
 deploy :: DeployProc
 deploy lock = catch (deployLock dep lock) handleException
@@ -52,12 +54,15 @@ outputCollectedAndSent :: Sh a -> Sh a
 outputCollectedAndSent = id -- TODO
 
 onlyDo :: Text -> Sh a -> IO ()
-onlyDo name sh = shelly $
-                 outputCollectedAndSent $
-                 errExit True $
-                 withinServiceBundle $
-                 stepReported name $
-                 sh >> return ()
+onlyDo name sh = onlyDoWithoutCd name sh'
+  where sh' = withinServiceBundle sh
+
+onlyDoWithoutCd :: Text -> Sh a -> IO ()
+onlyDoWithoutCd name sh = shelly $
+                          outputCollectedAndSent $
+                          errExit True $
+                          stepReported name $
+                          sh >> return ()
 
 onlyUpdateCode :: IO ()
 onlyUpdateCode = onlyDo "Updating Code" updateCode
@@ -69,11 +74,13 @@ onlyReloadServices :: IO ()
 onlyReloadServices = onlyDo "Reloading Services" reloadServices
 
 onlyCloneServiceBundle :: String -> IO ()
-onlyCloneServiceBundle url = shelly $
-                             outputCollectedAndSent $
-                             errExit True $
-                             stepReported "Cloning Repo" $
-                             cloneServiceBundle (T.pack url)
+onlyCloneServiceBundle url = onlyDoWithoutCd "Cloning Repo" clone
+  where clone = cloneServiceBundle (T.pack url)
+
+onlyGenerateServiceBundle :: String -> IO ()
+onlyGenerateServiceBundle directory = onlyDoWithoutCd name gen
+  where name = "Generating Service Bundle Template"
+        gen = generateServiceBundle (fromText $ T.pack directory)
 
 setupServices :: String -> IO ()
 setupServices url = shelly logged
@@ -141,8 +148,7 @@ cloneServiceBundle url = do
 
 serviceList :: Sh [ServiceName]
 serviceList = filter nocomment <$> svrLines
-  where config_file = "services"
-        svrLines = T.lines <$> readfile config_file
+  where svrLines = T.lines <$> readfile serviceListFile
         nocomment txt
           | "#" `T.isPrefixOf` txt = False
           | T.null txt             = False
@@ -180,3 +186,10 @@ sendMailMailgun subject body recipient = do
 mailOutput :: Bool -> Text -> Sh ()
 mailOutput isSuccessful log = do
   return ()
+
+generateServiceBundle :: Shelly.FilePath -> Sh ()
+generateServiceBundle directory = sub $ do
+  cd directory
+  git "init" []
+  touchfile "docker-compose.yml"
+  touchfile serviceListFile

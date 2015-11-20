@@ -10,6 +10,7 @@ data Subcommand = CmdDaemon
                 | CmdBuild
                 | CmdSetup String
                 | CmdUp
+                | CmdInit (Maybe String)
 
 
 parseOptions :: IO Subcommand
@@ -19,6 +20,7 @@ parseOptions = execParser opts
                    parseSubcommand CmdBuild  "build"  "(Re)build services" <|>
                    parseSubcommand CmdUp     "up"     "(Re)start services" <|>
                    parseSetup                                              <|>
+                   parseInit                                               <|>
                    parseEcho
         desc = fullDesc <>
                briefDesc <>
@@ -35,12 +37,18 @@ parseSetup :: Parser Subcommand
 parseSetup = CmdSetup <$>
              subparser (command  "setup" (info parseURL i) <>
                         metavar  "setup")
-  where parseURL = strArgument (metavar "[GIT-URL]")
+  where parseURL = strArgument (metavar "GIT_REPO")
         i = briefDesc <> progDesc "Clone Git repo and build"
 
+parseInit :: Parser Subcommand
+parseInit = CmdInit <$>
+            subparser (command "init" (info parseDir i) <>
+                       metavar "init")
+  where parseDir = optional $ strArgument (metavar "[DIR]")
+        i = briefDesc <> progDesc "Generate poi service bundle template"
 
 parseEcho :: Parser Subcommand
 parseEcho = CmdEcho <$> subparser (command "echo" (info parseText i) <>
                                    metavar "echo")
-  where parseText = strArgument (metavar "[TEXT]")
+  where parseText = strArgument (metavar "TEXT")
         i = briefDesc <> progDesc "Echo some text (for test)"

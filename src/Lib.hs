@@ -16,6 +16,8 @@ runPoi = do
     CmdBuild   -> onlyBuildServices
     CmdUp      -> onlyReloadServices
     CmdSetup x -> setupServices x
+    CmdInit Nothing  -> onlyGenerateServiceBundle "."
+    CmdInit (Just x) -> onlyGenerateServiceBundle x
 
 
 runWebhook :: IO ()
