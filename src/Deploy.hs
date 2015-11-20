@@ -30,6 +30,7 @@ import Data.Either
 
 import TextCollector
 import Config
+import EmailLog
 
 default (Text)
 
@@ -83,10 +84,7 @@ collectAndSendOutput sh = liftIO $ do
     handle (Right _) _       = return ()
     final result text = do
       let succ = either (const False) (const True) result
-      -- sendEmailResult succ text
-      printf "Build result: %s\n" (show succ)
-      putStrLn "Output:"
-      putStrLn (T.unpack text)
+      emailDeployResult succ text
 
 onlyDo :: Text -> Sh a -> IO ()
 onlyDo name sh = onlyDoWithoutCd name sh'
@@ -94,7 +92,6 @@ onlyDo name sh = onlyDoWithoutCd name sh'
 
 onlyDoWithoutCd :: Text -> Sh a -> IO ()
 onlyDoWithoutCd name sh = shelly $
-                          collectAndSendOutput $
                           errExit True $
                           stepReported name $
                           sh >> return ()
