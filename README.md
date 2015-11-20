@@ -47,20 +47,21 @@ Install all required software, and make those binaries accessible in
 If you are on an Ubuntu VPS, you can use the automatic setup script:
 
 ```
-$ bash <(wget -O - TODO)
+$ bash <(wget -O - https://raw.githubusercontent.com/shouya/poi/master/setup-ubuntu.sh)
 ```
 
 Download the `poi` binary:
 
 ```
-$ wget -O poi <TODO>/poi
+$ wget -O poi https://github.com/shouya/poi/releases/download/v1.0/poi
 $ chmod +x poi
 ```
 
-Use poi to setup the service bundle,
+Use poi to setup the service bundle, you might need to set up SSH key
+before checkout from the repo,
 
 ```
-$ ./poi setup https://github.com/<xxx>/<your-service-bundle>
+$ ./poi setup git@github.com:<xxx>/<your-service-bundle>
 $ ./poi test
 $ ./poi build
 ```
