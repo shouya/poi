@@ -15,7 +15,7 @@
 * [ ] Auto restart (with systemd)
 * [ ] Update itself daily (with systemd)
 * [x] Service Bundle setup from git repo
-* [ ] Generate initial service bundle
+* [x] Generate initial service bundle
 * [x] Auto re-deploy with push webhook
 * [x] Full logs and failure handling
 * [ ] Email feedback for build result (with logs)
