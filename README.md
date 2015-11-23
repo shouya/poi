@@ -62,7 +62,7 @@ before checkout from the repo,
 
 ```
 $ ./poi setup git@github.com:<xxx>/<your-service-bundle>
-$ ./poi test
+$ ./poi test # not implemented, skip this step
 $ ./poi build
 ```
 
@@ -72,7 +72,7 @@ Start poi daemon,
 $ ./poi daemon
 ```
 
-Or if you want poi daemon to be automatically started, (with systemd)
+Or if you want poi daemon to be automatically started, (with systemd) NOT IMPLEMENTED YET
 
 ```
 $ ./poi systemd | sudo tee /etc/systemd/system/poi_daemon.service
@@ -87,7 +87,7 @@ The setup script will generate the following directory structure:
 ```
 /poi/
  +- poi
- +- service-bundle/
+ +- vps/
     +- .git/*
     +- poi.conf
     +- docker-compose.yml
