@@ -11,7 +11,7 @@ apt-get update
 apt-cache policy docker-engine
 apt-get install -y curl git docker-engine
 
-docker_compose_version=1.4.2
+docker_compose_version=1.5.1
 curl -L "https://github.com/docker/compose/"`
        `"releases/download/$docker_compose_version/"`
        `"docker-compose-`uname -s`-`uname -m`" \
