@@ -26,7 +26,7 @@ curl -L  "https://raw.githubusercontent.com/docker/"`
 mkdir -p ~/poi
 cd ~/poi
 
-wget -O poi https://github.com/shouya/poi/releases/download/v0.1/poi
+wget -O poi https://github.com/shouya/poi/releases/download/v1.0/poi
 chmod +x poi
 
 echo Done.
