@@ -189,7 +189,6 @@ reloadServices :: Sh ()
 reloadServices = do
   services <- serviceList
   compose ["kill"]
-  compose ["rm", "--force"]
   compose (["up", "-d"] <> services)
 
 
