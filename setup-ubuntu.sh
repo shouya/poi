@@ -28,3 +28,4 @@ cd ~/poi
 
 wget -O poi https://github.com/shouya/poi/releases/download/v0.1/poi
 chmod +x pochmod +x poi
+
