@@ -6,49 +6,35 @@ module Option
 import Options.Applicative
 
 data Subcommand = CmdDaemon
-                | CmdEcho String
-                | CmdBuild
-                | CmdSetup String
-                | CmdUp
-                | CmdInit (Maybe String)
+                | CmdRun
+                | CmdGenConf
+                | CmdCheckConfig
+type ConfigPath = String
 
-
-parseOptions :: IO Subcommand
+parseOptions :: IO (ConfigPath, Subcommand)
 parseOptions = execParser opts
-  where opts = info (helper <*> commands) desc
-        commands = parseSubcommand CmdDaemon "daemon" "Start poi daemon"   <|>
-                   parseSubcommand CmdBuild  "build"  "(Re)build services" <|>
-                   parseSubcommand CmdUp     "up"     "(Re)start services" <|>
-                   parseSetup                                              <|>
-                   parseInit                                               <|>
-                   parseEcho
+  where opts = info (helper <*> parser') desc
+        commandParser =
+          cmd "daemon"      CmdDaemon      "Start poi daemon"           <|>
+          cmd "run"         CmdRun         "Checkout & run script once" <|>
+          cmd "genconfig"   CmdGenConf     "Generate default config"    <|>
+          cmd "checkconfig" CmdCheckConfig "Check config"
+        parser' = (,) <$> configOption <*> commandParser
         desc = fullDesc <>
                briefDesc <>
-               header "poi: Yet another VPS deployment daemon"
+               header "poi: Portable VPS deployment daemon"
 
-parseSubcommand :: Subcommand -> String -> String -> Parser Subcommand
-parseSubcommand subc name desc = subc <$ subparser parser
-  where parser = (command name (info emptyParser help) <>
-                  metavar name)
-        emptyParser = pure ()
-        help = briefDesc <> progDesc desc
+configOption :: Parser ConfigPath
+configOption = optionParser <|> pure "vps/poi.conf"
+  where optionParser = strOption $
+          long "config" <>
+          short 'c' <>
+          value "vps/poi.conf" <>
+          metavar "CONFIG" <>
+          help "Specify the location of config file"
 
-parseSetup :: Parser Subcommand
-parseSetup = CmdSetup <$>
-             subparser (command  "setup" (info parseURL i) <>
-                        metavar  "setup")
-  where parseURL = strArgument (metavar "GIT_REPO")
-        i = briefDesc <> progDesc "Clone Git repo and build"
 
-parseInit :: Parser Subcommand
-parseInit = CmdInit <$>
-            subparser (command "init" (info parseDir i) <>
-                       metavar "init")
-  where parseDir = optional $ strArgument (metavar "[DIR]")
-        i = briefDesc <> progDesc "Generate poi service bundle template"
-
-parseEcho :: Parser Subcommand
-parseEcho = CmdEcho <$> subparser (command "echo" (info parseText i) <>
-                                   metavar "echo")
-  where parseText = strArgument (metavar "TEXT")
-        i = briefDesc <> progDesc "Echo some text (for test)"
+cmd :: String -> Subcommand -> String -> Parser Subcommand
+cmd name constructor desc =
+  subparser $ command name (info (pure constructor) descInfo) <> metavar name
+  where descInfo = briefDesc <> progDesc desc

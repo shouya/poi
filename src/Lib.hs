@@ -1,14 +1,21 @@
 module Lib (runPoi) where
 
+import Control.Concurrent
+import Text.Printf (printf)
+
 import Webhook
 import Daemon
 import Config
 import Option
+import Deploy (deploy)
 
-import Data.IORef
 
 runPoi :: IO ()
-runPoi = undefined
+runPoi = do
+  (cfg, command) <- parseOptions
+  printf "Starting with config %s\n" cfg
+  loadConfig cfg
+  runCommand command
   -- cmd <- parseOptions
   -- case cmd of
     -- CmdDaemon config -> runDaemon
@@ -20,3 +27,24 @@ runPoi = undefined
     -- CmdSetup x -> setupServices x
     -- CmdInit Nothing  -> onlyGenerateServiceBundle "."
     -- CmdInit (Just x) -> onlyGenerateServiceBundle x
+
+{-
+data Subcommand = CmdDaemon
+                | CmdRun
+                | CmdGenConf
+                | CmdCheckConfig
+                deriving Show
+-}
+
+runCommand :: Subcommand -> IO ()
+
+runCommand CmdDaemon = do
+  deployDaemon
+  webserverDaemon
+  sleepForever
+runCommand CmdRun = deploy
+runCommand CmdGenConf = confString >>= putStrLn
+runCommand CmdCheckConfig = runCommand CmdGenConf
+
+sleepForever :: IO ()
+sleepForever = threadDelay (1000 * 60 * 60 * 24 * 365 * 100) >> sleepForever

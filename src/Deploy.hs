@@ -5,11 +5,10 @@
 module Deploy ( deploy, deployWorker ) where
 
 import Shelly
-import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Monoid ((<>))
 import Prelude hiding (FilePath, log)
-import Logger (logT, resetLog)
+import Logger (logT)
 import Status (waitTask)
 import Config (readConfT)
 default (Text)
@@ -17,12 +16,11 @@ default (Text)
 deployWorker :: IO ()
 deployWorker = do
   waitTask
-  resetLog
   logT "task received, starting process"
-  shelly deploy
+  deploy
 
-deploy :: Sh ()
-deploy = withShellConfig $ do
+deploy :: IO ()
+deploy = shelly $ withShellConfig $ do
   checkoutLatestSource
   runScript
 

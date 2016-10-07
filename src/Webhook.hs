@@ -11,6 +11,7 @@ import Network.URL
 import Network.HTTP.Server.Logger
 
 import Config
+import Status (pushTask)
 
 startWebhook :: IO ()
 startWebhook = config >>= flip serverWith handler
@@ -43,6 +44,7 @@ handler _ url _ = do
     Just path -> handlePath path
 
 handlePath :: String -> IO (Response String)
-handlePath (stripPrefix "webhook" -> Just _) = undefined
-  -- do forkIO $ emptyResponse 200 "Success"
-handlePath _ = undefined
+handlePath (stripPrefix "webhook" -> Just _) = do
+  pushTask
+  return $ emptyResponse 200 "Success"
+handlePath _ = return $ emptyResponse 404 "Not found"

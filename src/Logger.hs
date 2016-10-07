@@ -6,8 +6,9 @@ import Control.Monad.STM
 import Control.Concurrent.STM.TQueue
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Maybe
-import Data.Text
+import Data.Text (pack, unpack, splitOn, strip, Text)
 import qualified Data.ByteString.Char8 as C
+import Data.List (intercalate)
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Maybe
@@ -79,7 +80,15 @@ buildMessage body' = MaybeT $ fmap eitherToMaybe message
           return $ hailgunMessage subj body sender recipients []
 
 prepareMessageText :: IO Text
-prepareMessageText = undefined
+prepareMessageText = atomically $ do
+  xs <- fmap (takeWhile isJust) (sequence $ repeat $ tryReadTQueue logs)
+  let xs' = fromMaybe [] (sequence xs)
+      lns = fmap toLine xs'
+      msg = joinLines lns
+  return (pack msg)
+  where toLine (time, text) = printf "(%s) %s" (isoFormatTime time) text
+        joinLines = intercalate "\n"
+
 
 
 isoFormatTime :: UTCTime -> String
