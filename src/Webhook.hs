@@ -34,9 +34,7 @@ handler _ url _ = do
   prefix <- readConf "server" "prefix"
   case stripPrefix prefix (url_path url) of
     Nothing   -> return $ respondWith NotFound
-    Just path -> do
-      putStrLn path
-      handlePath path
+    Just path -> handlePath path
 
 handlePath :: String -> IO (Response String)
 handlePath (stripPrefix "webhook" -> Just _) = do

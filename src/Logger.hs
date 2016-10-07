@@ -4,14 +4,12 @@ import Prelude hiding (log)
 import Control.Monad
 import Control.Monad.STM
 import Control.Concurrent.STM.TQueue
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Maybe
 import Data.Text (pack, unpack, splitOn, strip, Text)
+import Data.Monoid
 import qualified Data.ByteString.Char8 as C
-import Data.List (intercalate)
 import Data.Time.Clock
 import Data.Time.Format
-import Data.Maybe
 import Text.Printf
 import System.IO.Unsafe
 import Mail.Hailgun
@@ -43,20 +41,21 @@ logT text = do
 -- this function send the log via email
 sendLog :: IO ()
 sendLog = do
-  (collapseMaybe . runMaybeT) sendLogProc
+  enabled <- readConf "mailgun" "enabled"
+  when enabled sendLogProc
   resetLog
-  where collapseMaybe :: IO (Maybe ()) -> IO ()
-        collapseMaybe = fmap (fromMaybe ())
 
 
-sendLogProc :: MaybeT IO ()
+sendLogProc :: IO ()
 sendLogProc = do
-  lift (readConf "mailgun" "enabled") >>= flip when (fail "")
-  message <- lift prepareMessageText >>= buildMessage
-  context <- lift mailContext
-  response <- MaybeT $ sendEmail' context message
-  lift $ putStrLn "Successfully sent log!"
-  lift $ print response
+  message <- prepareMessageText >>= runMaybeT . buildMessage
+  case message of
+    Nothing -> return ()
+    Just message' -> do
+      context <- mailContext
+      response <- sendEmail' context message'
+      print response
+      putStrLn "Successfully sent log!"
   where sendEmail' = (fmap . fmap . fmap) eitherToMaybe sendEmail
 
 
@@ -74,20 +73,23 @@ buildMessage body' = MaybeT $ fmap eitherToMaybe message
           sender <- C.pack <$> readConf "mailgun" "sender"
           recips <- splitOn (pack ",") . pack <$> readConf "mailgun" "recipients"
           let subj = pack $ printf "%s %s" now "poi build result"
-              body = TextOnly $ C.pack $ unpack body'
+              textBody   = C.pack $ unpack body'
+              htmlBody   = C.pack $ "<pre>" <> (unpack body') <> "</pre>"
+              body       = TextAndHTML textBody htmlBody
               recips'    = fmap (C.pack . unpack . strip) recips
               recipients = MessageRecipients recips' [] []
           return $ hailgunMessage subj body sender recipients []
 
 prepareMessageText :: IO Text
-prepareMessageText = atomically $ do
-  xs <- fmap (takeWhile isJust) (sequence $ repeat $ tryReadTQueue logs)
-  let xs' = fromMaybe [] (sequence xs)
-      lns = fmap toLine xs'
-      msg = joinLines lns
-  return (pack msg)
-  where toLine (time, text) = printf "(%s) %s" (isoFormatTime time) text
-        joinLines = intercalate "\n"
+prepareMessageText = do
+  last_ <- atomically $ tryReadTQueue logs
+  case last_ of
+    Nothing -> return (pack "")
+    Just (time, text) -> do
+      let head' = printf "(%s) %s\n" (isoFormatTime time) text
+      rest' <- prepareMessageText
+      return (pack head' <> rest')
+
 
 
 

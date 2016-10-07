@@ -11,4 +11,4 @@ docker run -it --rm \
        -v $HOME/.stack:/root/.stack \
        -w /tmp/poi \
        poi-linux-x64 \
-       sh -c "stack ${STACK_OPTS} setup && stack ${STACK_OPTS} build"
+       sh -c "stack ${STACK_OPTS} build"

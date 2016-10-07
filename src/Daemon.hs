@@ -4,33 +4,18 @@ module Daemon
   ) where
 
 import Prelude hiding (log)
-import Control.Concurrent (forkFinally)
-import Text.Printf
-import Logger (log, sendLog)
+import Control.Concurrent
+import Control.Monad
+
+import Logger (sendLog)
 import Deploy (deployWorker)
 import Webhook (startWebhook)
 
-deployDaemon :: IO ()
-deployDaemon = do
-  _ <- forkFinally deployWorker finishUpAndRestart
-  return ()
-  where logEvent (Left exception) =
-          log $ printf "Error occured: %s\n" (show exception)
-        logEvent (Right _) =
-          log "finished"
-        finishUpAndRestart x = do
-          logEvent x
-          deployWorker
-          sendLog
+deployDaemon :: IO ThreadId
+deployDaemon = forkIO $ forever $ do
+  deployWorker
+  sendLog
+  putStrLn "Successfully deployed"
 
-webserverDaemon :: IO ()
-webserverDaemon = do
-  _ <- forkFinally startWebhook finishUpAndRestart
-  return ()
-  where logEvent (Left exception) =
-          log $ printf "Webhook abort: %s, restarting.\n" (show exception)
-        logEvent (Right _) =
-          log $ printf "Webhook exited gracefully, restarting.\n"
-        finishUpAndRestart x = do
-          logEvent x
-          startWebhook
+webserverDaemon :: IO ThreadId
+webserverDaemon = forkIO $ forever startWebhook

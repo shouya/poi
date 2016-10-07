@@ -6,6 +6,6 @@ COPY stack.yaml /root/.stack/global-project/stack.yaml
 
 RUN stack setup
 
-WORKDIR /tmp/poi
+
 
 
