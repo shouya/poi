@@ -45,26 +45,27 @@ loadConfig path = do
 
 defaultConfig :: ConfigParser
 defaultConfig = forceEither $ readstring emptyCP conf
-  where conf = "[server]\
-               \host = 127.0.0.1\
-               \port = 8000\
-               \prefix = /\
-               \\
-               \[git]\
-               \repo = https://github.com/shouya/poi.git\
-               \branch = demo\
-               \dir = /home/shou/demo\
-               \\
-               \[script]\
-               \work_dir = /home/shou/demo\
-               \run = /home/shou/demo/script.sh\
-               \\
-               \[mailgun]\
-               \enabled = 0\
-               \domain = [your_domain]\
-               \api_key = [your_api_key]\
-               \sender = example@your_domain\
-               \recipients = user1@gmail.com,user2@hotmail.com"
+  where conf = "[server]" <~>
+               "host = 127.0.0.1" <~>
+               "port = 8000" <~>
+               "prefix = " <~>
+               "" <~>
+               "[git]" <~>
+               "repo = https://github.com/shouya/poi.git" <~>
+               "branch = demo" <~>
+               "dir = /home/shou/demo" <~>
+               "" <~>
+               "[script]" <~>
+               "work_dir = /home/shou/demo" <~>
+               "run = /home/shou/demo/script.sh" <~>
+               "" <~>
+               "[mailgun]" <~>
+               "enabled = 0" <~>
+               "domain = [your_domain]" <~>
+               "api_key = [your_api_key]" <~>
+               "sender = example@your_domain" <~>
+               "recipients = user1@gmail.com,user2@hotmail.com"
+        a <~> b = a ++ "\n" ++ b
 
 
 instance Get_C Text where

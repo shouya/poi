@@ -15,7 +15,7 @@ deployDaemon = do
   _ <- forkFinally deployWorker finishUpAndRestart
   return ()
   where logEvent (Left exception) =
-          log $ printf "Error occured: %s" (show exception)
+          log $ printf "Error occured: %s\n" (show exception)
         logEvent (Right _) =
           log "finished"
         finishUpAndRestart x = do
@@ -28,9 +28,9 @@ webserverDaemon = do
   _ <- forkFinally startWebhook finishUpAndRestart
   return ()
   where logEvent (Left exception) =
-          log $ printf "Webhook exited with exception: %s, restarting." (show exception)
+          log $ printf "Webhook abort: %s, restarting.\n" (show exception)
         logEvent (Right _) =
-          log $ printf "Webhook exited gracefully, restarting."
+          log $ printf "Webhook exited gracefully, restarting.\n"
         finishUpAndRestart x = do
           logEvent x
           startWebhook

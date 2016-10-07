@@ -51,9 +51,6 @@ runScript = do
 
   unlessM (test_d dir) $
     errorExitLog $ "Target directory does not exist: " <> toTextIgnore dir
-  unlessM (test_px script) $
-    errorExitLog $ "Script is not executable: " <> toTextIgnore script
-  unlessM (test_px "/bin/bash") $ errorExitLog "/bin/bash not found"
 
   commandLog "/bin/bash" [] ["-c", toTextIgnore script]
 

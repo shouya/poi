@@ -3,7 +3,6 @@ module Lib (runPoi) where
 import Control.Concurrent
 import Text.Printf (printf)
 
-import Webhook
 import Daemon
 import Config
 import Option
@@ -13,7 +12,6 @@ import Deploy (deploy)
 runPoi :: IO ()
 runPoi = do
   (cfg, command) <- parseOptions
-  printf "Starting with config %s\n" cfg
   loadConfig cfg
   runCommand command
   -- cmd <- parseOptions

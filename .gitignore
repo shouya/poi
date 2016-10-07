@@ -4,3 +4,4 @@
 .docker_built
 bin/poi
 dist/
+poi.conf
