@@ -2,62 +2,83 @@ module Config
        ( readConf
        , readConfT
        , confString
+       , loadConfig
        ) where
 
 import Data.ConfigFile
-import Data.Functor ((<$>))
-
+import Data.IORef
 import qualified Data.Text as T
 import Data.Text (Text)
 import Text.Printf
+
+import System.IO.Unsafe
 import System.Directory
 
-configPath = "vps/poi.conf"
+import Control.Monad
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.Class
 
 forceEither :: Either e a -> a
 forceEither (Left _)  = error "forceEither over (Left x)!"
 forceEither (Right a) = a
 
-poiConf :: IO ConfigParser
-poiConf = do
-  doesExist <- doesFileExist configPath
-  if doesExist
-    then loadconfig
-    else return defaultConfig
-  where loadconfig = do
-          result <- readfile defaultConfig configPath
-          case result of
-            Left  _ -> do
-              print "Read config error, using default config"
-              return defaultConfig
-            Right a -> return a
+{-# NOINLINE config #-}
+config :: IORef ConfigParser
+config = unsafePerformIO $ newIORef emptyCP
+
+
+loadConfig :: String -> IO ()
+loadConfig path = do
+  newConf <- fmap (either id id) . runExceptT $ do
+    unlessFileExist path $ do
+      lift $ putStrLn $ "Config path does not exist: " ++ path
+      throwE defaultConfig
+    mapExceptT transConfig $ ExceptT $ readfile defaultConfig path
+  writeIORef config newConf
+  where unlessFileExist x = lift (doesFileExist x) >.> unless
+        (ma >.> ambmb) mb = ma >>= flip ambmb mb
+        transConfig mea = mea >>= \ea -> case ea of
+          Left err -> do putStrLn $ "Error parsing config: " ++ show err
+                         return $ Left defaultConfig
+          Right a  -> return $ Right a
 
 
 defaultConfig :: ConfigParser
-defaultConfig = forceEither $ do
-  let cp = emptyCP
-  cp <- add_section emptyCP "main"
-  cp <- set cp "main" "email_log" "0"
-  cp <- set cp "main" "listen_port" "8000"
+defaultConfig = forceEither $ readstring emptyCP conf
+  where conf = "[server]\
+               \host = 127.0.0.1\
+               \port = 8000\
+               \prefix = /\
+               \\
+               \[git]\
+               \repo = https://github.com/shouya/poi.git\
+               \branch = demo\
+               \dir = /home/shou/demo\
+               \\
+               \[script]\
+               \work_dir = /home/shou/demo\
+               \run = /home/shou/demo/script.sh\
+               \\
+               \[mailgun]\
+               \enabled = 0\
+               \domain = [your_domain]\
+               \api_key = [your_api_key]\
+               \sender = example@your_domain\
+               \recipients = user1@gmail.com,user2@hotmail.com"
 
-  cp <- add_section cp "mailgun"
-  cp <- set cp "mailgun" "from" ""
-  cp <- set cp "mailgun" "to" ""
 
-  return cp
-
+instance Get_C Text where
+  get a b c = T.pack <$> get a b c
 
 readConfT :: Get_C a => Text -> Text -> IO a
 readConfT a b = readConf (T.unpack a) (T.unpack b)
 
 readConf :: Get_C a => String -> String -> IO a
 readConf a b = do
-  purePoiConf <- poiConf
-  case get purePoiConf a b of
+  conf <- readIORef config
+  case get conf a b of
     Right x -> return x
     Left _  -> error $ printf "Unknown config [%s:%s]." a b
 
-
-
 confString :: IO String
-confString = to_string <$> poiConf
+confString = to_string <$> readIORef config

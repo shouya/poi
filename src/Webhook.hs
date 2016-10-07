@@ -1,28 +1,48 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Webhook
        ( startWebhook
        ) where
 
+import Data.List
+import Network.HTTP.Server
+import Network.Socket.Internal
+import Network.URL
+import Network.HTTP.Server.Logger
 
-import qualified Data.ByteString.Char8 as B8
-
-import Network (listenOn, PortID(..))
-import Network.Socket (withSocketsDo, accept, sClose)
-import Network.Socket.ByteString (sendAll)
-import Control.Concurrent (forkIO)
-
-import Deploy
 import Config
 
-startWebhook :: DeployLock -> DeployProc -> IO ()
-startWebhook lock deploy = withSocketsDo $ do
-  port <- (read <$> readConf "main" "listen_port" :: IO Int)
-  sock <- listenOn $ PortNumber (toEnum port)
-  loop sock
-  where loop sock = do
-          (conn, _) <- accept sock
-          forkIO $ handle conn
-          loop sock
-        handle conn = do forkIO $ deploy lock
-                         sendAll conn $ B8.pack msg
-                         sClose conn
-        msg = "HTTP/1.0 200 OK\r\nContent-Length: 3\r\n\r\npoi\r\n"
+startWebhook :: IO ()
+startWebhook = config >>= flip serverWith handler
+
+
+config :: IO Config
+config = do
+  port' <- readConf "server" "port"
+  host' <- readConf "server" "host"
+  return Config { srvLog = stdLogger
+                , srvHost = host'
+                , srvPort = port'
+                }
+
+emptyResponse :: Int -> String -> Response String
+emptyResponse code reason' =
+  Response { rspCode    = transformCode code
+           , rspReason  = reason'
+           , rspBody    = ""
+           , rspHeaders = []
+           }
+  where transformCode c = apply3 (`mod` 10) (c `div` 100, c `div` 10, c)
+        apply3 f (a,b,c) = (f a, f b, f c)
+
+handler :: SockAddr -> URL -> Request a -> IO (Response String)
+handler _ url _ = do
+  prefix <- readConf "server" "prefix"
+  case stripPrefix prefix (url_path url) of
+    Nothing   -> return $ emptyResponse 404 "Not Found"
+    Just path -> handlePath path
+
+handlePath :: String -> IO (Response String)
+handlePath (stripPrefix "webhook" -> Just _) = undefined
+  -- do forkIO $ emptyResponse 200 "Success"
+handlePath _ = undefined

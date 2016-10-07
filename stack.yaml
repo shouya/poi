@@ -3,3 +3,8 @@ extra-package-dbs: []
 packages:
  - '.'
 resolver: lts-7.2
+
+extra-deps:
+ - http-server-1.0.6
+ - mime-0.4.0.2
+ - unagi-chan-0.4.0.0
