@@ -2,6 +2,6 @@
 .stack/*
 !.stack/.gitkeep
 .docker_built
-bin/poi
+bin/*
 dist/
 poi.conf

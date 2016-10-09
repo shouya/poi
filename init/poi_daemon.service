@@ -1,0 +1,9 @@
+[Unit]
+Description=Poi daemon
+
+[Service]
+ExecStart=/usr/local/bin/poi -c /path/to/config daemon
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
