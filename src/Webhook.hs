@@ -31,6 +31,8 @@ respondWith s = insertHeader HdrContentLength "0"
 
 handler :: SockAddr -> URL -> Request String -> IO (Response String)
 handler _ url _ = do
+  print "asdfa"
+  print url
   prefix <- readConf "server" "prefix"
   case stripPrefix prefix (url_path url) of
     Nothing   -> return $ respondWith NotFound

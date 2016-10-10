@@ -41,7 +41,7 @@ library
                      , url
   default-language:    Haskell2010
 
-executable poi-exe
+executable poi
   hs-source-dirs:      app
   main-is:             Main.hs
 --  ld-options:          -static -pthread

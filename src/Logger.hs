@@ -35,7 +35,9 @@ log = logT . pack
 logT :: Text -> IO ()
 logT text = do
   now <- getCurrentTime
-  atomically $ writeTQueue logs (now, text)
+  let newLog = (now, text)
+  atomically $ writeTQueue logs newLog
+  putStrLn $ formatLine newLog
 
 
 -- this function send the log via email
@@ -65,19 +67,26 @@ mailContext = ctx (readConf "mailgun" "domain")
                   (return Nothing)
   where ctx = liftM3 HailgunContext
 
+mailgunRecipients :: IO [C.ByteString]
+mailgunRecipients = do
+  conf <- pack <$> readConf "mailgun" "recipients"
+  let strList = splitOn (pack ",") conf
+      recipsBS = fmap (C.pack . unpack . strip) strList
+  return recipsBS
+
+
 
 buildMessage :: Text -> MaybeT IO HailgunMessage
 buildMessage body' = MaybeT $ fmap eitherToMaybe message
   where message = do
           now    <- isoFormatTime <$> getCurrentTime
           sender <- C.pack <$> readConf "mailgun" "sender"
-          recips <- splitOn (pack ",") . pack <$> readConf "mailgun" "recipients"
+          recips <- mailgunRecipients
           let subj = pack $ printf "%s %s" now "poi build result"
               textBody   = C.pack $ unpack body'
-              htmlBody   = C.pack $ "<pre>" <> (unpack body') <> "</pre>"
+              htmlBody   = C.pack $ "<pre>" <> unpack body' <> "</pre>"
               body       = TextAndHTML textBody htmlBody
-              recips'    = fmap (C.pack . unpack . strip) recips
-              recipients = MessageRecipients recips' [] []
+              recipients = MessageRecipients recips [] []
           return $ hailgunMessage subj body sender recipients []
 
 prepareMessageText :: IO Text
@@ -85,12 +94,13 @@ prepareMessageText = do
   last_ <- atomically $ tryReadTQueue logs
   case last_ of
     Nothing -> return (pack "")
-    Just (time, text) -> do
-      let head' = printf "(%s) %s\n" (isoFormatTime time) text
+    Just log -> do
+      let head' = formatLine log
       rest' <- prepareMessageText
       return (pack head' <> rest')
 
-
+formatLine :: LogT -> String
+formatLine (time, text) = printf "(%s) %s\n" (isoFormatTime time) text
 
 
 isoFormatTime :: UTCTime -> String

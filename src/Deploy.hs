@@ -5,12 +5,14 @@
 module Deploy ( deploy, deployWorker ) where
 
 import Shelly
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Data.Monoid ((<>))
 import Prelude hiding (FilePath, log)
 import Control.Monad (void)
+import Control.Concurrent
+import Control.Concurrent.MVar
 
-import Logger (logT)
+import Logger (logT, sendLog)
 import Status (waitTask)
 import Config (readConfT)
 default (Text)
@@ -19,7 +21,22 @@ deployWorker :: IO ()
 deployWorker = do
   waitTask
   logT "task received, starting process"
-  deploy
+  forkAndWait deploy (\x -> postProcess x >> sendLog)
+
+  where forkAndWait action and_then = do
+          lock <- newEmptyMVar
+          void $ forkFinally action $ \result -> do
+            r <- and_then result
+            putMVar lock ()
+            return r
+          takeMVar lock
+
+        postProcess (Right _) = logT "successfully deployed."
+        postProcess (Left exception) = do
+          logT "exception catpured in building process:"
+          logT $ pack $ show exception
+
+
 
 deploy :: IO ()
 deploy = shelly $ withShellConfig $ do
