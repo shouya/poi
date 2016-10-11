@@ -53,8 +53,13 @@ checkoutLatestSource = do
 
   cdLog dir
   branch <- readConfSh "git" "branch"
+
+  void $ git "rev-parse" ["HEAD"]
+
   void $ git "fetch" ["origin", branch]
   void $ git "reset" ["--hard", "origin/" <> branch]
+  void $ git "submodule" ["foreach", "fetch", "origin", "--all"]
+  void $ git "submodule" ["update"]
 
   where clone = do
           repo <- readConfSh "git" "repo"
