@@ -71,7 +71,7 @@ runScript = do
   unlessM (test_d dir) $
     errorExitLog $ "Target directory does not exist: " <> toTextIgnore dir
 
-  void $ command1Log "/bin/bash" ["-c"] (toTextIgnore script) []
+  void $ commandLog "/bin/bash" [toTextIgnore script] []
   return ()
 
 
