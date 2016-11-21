@@ -1,0 +1,20 @@
+[git]
+branch: master
+dir: /Users/shou/demo
+repo: https://github.com/shouyax/poi.git
+
+[mailgun]
+enabled: 1
+api_key: key-0ef93849ee91c5fed00695282685490d
+domain: lain.li
+recipients: test@lain.li
+sender: neko@lain.li
+
+[script]
+run: ls
+work_dir: /Users/shou/demo
+
+[server]
+host: 127.0.0.1
+port: 8989
+prefix: poi
