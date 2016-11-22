@@ -5,18 +5,18 @@ module Config
        , loadConfig
        ) where
 
-import Data.ConfigFile
-import Data.IORef
-import qualified Data.Text as T
-import Data.Text (Text)
-import Text.Printf
+import           Data.ConfigFile
+import           Data.IORef
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
+import           Text.Printf
 
-import System.IO.Unsafe
-import System.Directory
+import           System.Directory
+import           System.IO.Unsafe
 
-import Control.Monad
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Class
+import           Control.Monad
+import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.Except
 
 forceEither :: Either e a -> a
 forceEither (Left _)  = error "forceEither over (Left x)!"
@@ -56,6 +56,7 @@ defaultConfig = forceEither $ readstring emptyCP conf
                "dir = /home/shou/demo" <~>
                "" <~>
                "[script]" <~>
+               "mode = script" <~>
                "work_dir = /home/shou/demo" <~>
                "run = /home/shou/demo/script.sh" <~>
                "" <~>

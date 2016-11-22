@@ -1,20 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module Deploy ( deploy, deployWorker ) where
 
-import Shelly
-import Data.Text (Text, pack)
-import Data.Monoid ((<>))
-import Prelude hiding (FilePath, log)
-import Control.Monad (void)
-import Control.Concurrent
-import Control.Concurrent.MVar
+import           Control.Concurrent
+import           Control.Concurrent.MVar
+import           Control.Monad           (void)
+import           Data.Monoid             ((<>))
+import           Data.Text               (Text, pack)
+import           Prelude                 hiding (FilePath, log)
+import           Shelly
 
-import Logger (logT, sendLog)
-import Status (waitTask)
-import Config (readConfT)
+import           Config                  (readConfT)
+import           Logger                  (logT, sendLog)
+import           Status                  (waitTask)
 default (Text)
 
 deployWorker :: IO ()
@@ -58,7 +58,7 @@ checkoutLatestSource = do
 
   void $ git "fetch" ["origin", branch]
   void $ git "reset" ["--hard", "origin/" <> branch]
-  void $ git "submodule" ["foreach", "fetch", "origin", "--all"]
+  void $ git "submodule" ["foreach", "git", "fetch", "origin"]
   void $ git "submodule" ["update"]
 
   where clone = do
@@ -76,9 +76,12 @@ runScript = do
   unlessM (test_d dir) $
     errorExitLog $ "Target directory does not exist: " <> toTextIgnore dir
 
-  void $ commandLog "/bin/bash" [toTextIgnore script] []
-  return ()
-
+  mode <- readConfPathSh "script" "mode"
+  let bashArg = case mode of
+                  "command" -> ["-c", toTextIgnore script]
+                  "script"  -> [toTextIgnore script]
+                  _         -> [toTextIgnore script]
+  void $ commandLog "/bin/bash" bashArg []
 
 commandLog :: FilePath -> [Text] -> [Text] -> Sh Text
 commandLog a b c = do
