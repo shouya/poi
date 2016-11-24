@@ -1,20 +1,23 @@
-module Logger (resetLog, log, logT, sendLog) where
+module Logger (resetLog, log, logT, sendLog, peekMessageText) where
 
-import Prelude hiding (log)
-import Control.Monad
-import Control.Monad.STM
-import Control.Concurrent.STM.TQueue
-import Control.Monad.Trans.Maybe
-import Data.Text (pack, unpack, splitOn, strip, Text)
-import Data.Monoid
-import qualified Data.ByteString.Char8 as C
-import Data.Time.Clock
-import Data.Time.Format
-import Text.Printf
-import System.IO.Unsafe
-import Mail.Hailgun
+import           Control.Concurrent.STM.TQueue
+import           Control.Monad
+import           Control.Monad.Loops           (unfoldM)
+import           Control.Monad.STM
+import           Control.Monad.Trans.Maybe
+import qualified Data.ByteString.Char8         as C
+import           Data.Monoid
+import           Data.Text                     (Text, pack, splitOn, strip,
+                                                unpack)
+import           Data.Time.Clock
+import           Data.Time.Format
+import           Mail.Hailgun
+import           Prelude                       hiding (log)
+import           System.IO.Unsafe
+import           Text.Printf
 
-import Config
+import           Config
+import           Util
 
 type LogT = (UTCTime, Text)
 
@@ -89,18 +92,38 @@ buildMessage body' = MaybeT $ fmap eitherToMaybe message
               recipients = MessageRecipients recips [] []
           return $ hailgunMessage subj body sender recipients []
 
+-- prepareMessageText :: IO Text
+-- prepareMessageText = do
+--   last_ <- atomically $ tryReadTQueue logs
+--   case last_ of
+--     Nothing -> return (pack "")
+--     Just log -> do
+--       let head' = formatLine log
+--       rest' <- prepareMessageText
+--       return (pack head' <> rest')
+
 prepareMessageText :: IO Text
-prepareMessageText = do
-  last_ <- atomically $ tryReadTQueue logs
-  case last_ of
-    Nothing -> return (pack "")
-    Just log -> do
-      let head' = formatLine log
-      rest' <- prepareMessageText
-      return (pack head' <> rest')
+prepareMessageText = logsToText <$> readAllLog
+
+peekMessageText :: IO Text
+peekMessageText = logsToText <$> peekAllLog
+
+logsToText :: [LogT] -> Text
+logsToText = pack . concatMap formatLine
+
+peekAllLog :: IO [LogT]
+peekAllLog = atomically $ do
+    allLogs <- unfoldM (tryReadTQueue logs)
+    forM_ allLogs (writeTQueue logs)
+    return allLogs
+
+readAllLog :: IO [LogT]
+readAllLog = atomically $ unfoldM (tryReadTQueue logs)
+
 
 formatLine :: LogT -> String
 formatLine (time, text) = printf "(%s) %s\n" (isoFormatTime time) text
+
 
 
 isoFormatTime :: UTCTime -> String
@@ -108,5 +131,6 @@ isoFormatTime = formatTime defaultTimeLocale format
   where format = iso8601DateFormat (Just "%H:%M:%S")
 
 eitherToMaybe :: Either a b -> Maybe b
-eitherToMaybe (Left _) = Nothing
+eitherToMaybe (Left _)  = Nothing
 eitherToMaybe (Right x) = Just x
+

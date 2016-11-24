@@ -4,14 +4,16 @@ module Webhook
        ( startWebhook
        ) where
 
-import Data.List
-import Network.HTTP.Server
-import Network.Socket.Internal
-import Network.URL
-import Network.HTTP.Server.Logger
+import           Data.List
+import           Data.Text                  (unpack)
+import           Network.HTTP.Server
+import           Network.HTTP.Server.Logger
+import           Network.Socket.Internal
+import           Network.URL
 
-import Config
-import Status (pushTask)
+import           Config
+import           Logger                     (peekMessageText)
+import           Status                     (pushTask)
 
 startWebhook :: IO ()
 startWebhook = config >>= flip serverWith handler
@@ -25,21 +27,33 @@ config = do
                 , srvPort = port'
                 }
 
-respondWith :: StatusCode -> Response String
-respondWith s = insertHeader HdrContentLength "0"
-              $ respond s
+respondWithStatus :: StatusCode -> Response String
+respondWithStatus s = insertHeader HdrContentLength "0"
+                    $ respond s
+
+respondWithString :: String -> Response String
+respondWithString body = insertHeader HdrContentLength (show $ length body)
+                       $ insertHeader HdrContentType "text/plain"
+                       $ (respond OK :: Response String) { rspBody = body }
 
 handler :: SockAddr -> URL -> Request String -> IO (Response String)
 handler _ url _ = do
-  print "asdfa"
   print url
   prefix <- readConf "server" "prefix"
   case stripPrefix prefix (url_path url) of
-    Nothing   -> return $ respondWith NotFound
+    Nothing   -> return $ respondWithStatus NotFound
     Just path -> handlePath path
 
 handlePath :: String -> IO (Response String)
 handlePath (stripPrefix "webhook" -> Just _) = do
   pushTask
-  return $ respondWith OK
-handlePath _ = return $ respondWith NotFound
+  return $ respondWithStatus OK
+handlePath (stripPrefix "reload" -> Just _) = do
+  reloadConfig
+  respondWithString <$> confString
+handlePath (stripPrefix "build" -> Just _) = do
+  pushTask
+  return $ respondWithString "Build scheduled"
+handlePath (stripPrefix "logs" -> Just _) =
+  (respondWithString . unpack) <$> peekMessageText
+handlePath _ = return $ respondWithStatus NotFound

@@ -39,6 +39,7 @@ library
                      , stm
                      , transformers
                      , url
+                     , monad-loops
   default-language:    Haskell2010
 
 executable poi
